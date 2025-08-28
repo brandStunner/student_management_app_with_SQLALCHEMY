@@ -39,20 +39,35 @@ class StudentManagementSystem(db.Model):
 
 with app.app_context():
     db.create_all()
+@app.route("/")
+def welcome_page():
+    return jsonify({"message": "Welcome to our main page"})
 
-@app.route("/home", methods= ["GET","POST"])
+
+@app.route("/home", methods= ["GET"])
 def home():
-    if request.method == "POST":
-        data = request.get_json()
-        if not data:
-            return jsonify({"error":"no data provided"}),400
-        
-        name = data.get("name")
-        age = data.get("age")
-        email = data.get("email")
-               
-        return jsonify({"message": "data recieved", "data": data})
-    return jsonify({"Welcome to the homepage"})
+    try:
+        # Get all students from the database
+        students = StudentManagementSystem.query.all()
+
+        # Convert to serializable format
+        students_data = []
+        for student in students:
+            students_data.append({
+                "id": student.id,
+                "name": student.name,
+                "age": student.age,
+                "email": student.email
+            })
+
+        return jsonify({
+            "message": "Welcome to the homepage - All Students",
+            "total_students": len(students_data),
+            "students": students_data
+        })
+    except Exception as e:
+        return jsonify({"Error": "Failed to retrieve students", "error": str(e)}), 500
+       
 
         
 
@@ -71,30 +86,22 @@ def create_student():
         db.session.add(new_student)
         db.session.commit()
 
-        return make_response(jsonify({"message": "data created", "data": new_student}),200)
+        student_data = {
+            "id": new_student.id,
+            "name": new_student.name,
+            "age": new_student.age,
+            "email": new_student.email
+        }
+        return make_response(jsonify({"message": "data created", "data": student_data}),200)
+    
             
+        
+    except IntegrityError:
+        db.session.rollback()
+        return make_response(jsonify({"Error": "Student with this email already exists"}), 409)
     except Exception as e:
-        return make_response(jsonify({"Error": "error creating student", "error":str(e)}), 500)
+        db.session.rollback()
+        return make_response(jsonify({"Error": "error creating student", "error": str(e)}), 500)
 
-# print(StudentManagementSystem.__tablename__)
-
- 
-
-
-
-
-
-
-
-
-
-
-# Test connection
-# try:
-#     engine = create_engine(DATABASE_URI)
-#     with engine.connect() as connection:
-#         result = connection.execute(text("SELECT 1"))
-#         print("✅ Database connection successful!")
-#         print(f"Test result: {result.fetchone()}")
-# except Exception as e:
-#     print(f"❌ Database connection failed: {e}")
+if __name__ == "__main__":
+    app.run(debug=True)
