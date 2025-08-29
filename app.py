@@ -23,10 +23,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
-# initialize the database
 db = SQLAlchemy(app)
 
-# create table(using a class instead of sql scripts)
 class StudentManagementSystem(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(50), nullable = False)
